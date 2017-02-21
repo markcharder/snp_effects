@@ -6,7 +6,7 @@
 
 EFFPATH=/home/mark/local/src/snpEff #customise
 INPUTS=($(ls /home/mark/Rdrive/CCDM_Prog_10_Share-HANE0J-SE00128/Sclerotinia/pan_genome/outputs/Pawsey_02-17/*.var/*.highqual.vcf)) #customise
-INTERPROPATH=/home/mark/Rdrive/CCDM_Prog_10_Share-HANE0J-SE00128/Sclerotinia/localBackup/Research/2016/03.16/out/interpro_scan/version_2.interpro.txt #customise
+INTERPROPATH=/home/mark/Analyses/2017/02.17/filter_genes/interpro.filtered.txt #customise
 
 # Function to get commands for running snpEff in parallel on an array of inputs from the inputs directory.
 function get_commands()
@@ -83,14 +83,23 @@ if ! ls *interpro.txt >/dev/null 2>&1; then
 
 	lowarray=($(ls *LOW.txt))
 	modarray=($(ls *MODERATE.txt))
-	higharray=($(ls *HIGH.txt))
 
 	for file in ${lowarray[@]}; do
 		interpro_formatting $file
 	done
 	for file in ${modarray[@]}; do
+		stub=$file
+		stub=${stub##*/}
+		stub=${stub%.*}
+		array=($(awk '[print $3}' $file))
+		for name in ${array[@]}; do
+			newarray+=("$name\n")
+		done
+		echo ${newarray[*]} | tr ' ' '\n' | fgrep -f - $stub.HIGH.txt > $stub.temp
+		mv $stub.temp $stub.HIGH.txt
 		interpro_formatting $file
 	done
+	higharray=($(ls *HIGH.txt))
 	for file in ${higharray[@]}; do
 		interpro_formatting $file
 	done
