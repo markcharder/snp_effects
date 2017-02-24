@@ -110,47 +110,59 @@ for key in gcoords.iterkeys():
 
 allpos	= dict()
 for key in translator.iterkeys():
-	for ikey in iter(sorted(translator[key].iterkeys())):
-		if key in starts:
-			for i in xrange(0, len(starts[key]), 2):
-				if key not in allpos:
-					allpos[key]	= [int(starts[key][i]),int(ends[key][i]), ikey]
-				else:
-					allpos[key]	= allpos[key] + [ikey]
+	if key in starts:
+		count = 1
+		for i in range(0, len(starts[key])):
+			iikey		= key + "_" + str(i)
+			if key not in allpos:
+				allpos[key]	= {iikey: [int(starts[key][i]),int(ends[key][i]), translator[key]]}
+			else:
+				allpos[key]	= dict_append(allpos[key], {iikey : [int(starts[key][i]), int(ends[key][i]), translator[key]]})
 dpos	= dict()
+sortpos	= list()
 for key in allpos.iterkeys():
 	if gcoords[key][2] == "+":
-		sortpos	= sorted(allpos[key])
-		for i in range(0, len(sortpos)):
-			if sortpos[i] in translator[key]:
-				start	= translator[key][sortpos[i]]
-				tstart	= sortpos[i]
-			else:
-				newpos	= int(start) + (int(sortpos[i]) - int(tstart))
-				if key not in dpos:
-					dpos[key]	= [newpos]
+		for ikey in allpos[key].iterkeys():
+			sortpos	= list()
+			for iikey in allpos[key][ikey][2].iterkeys():
+				sortpos	= sortpos + [iikey]
+			sortpos	= [allpos[key][ikey][0], allpos[key][ikey][1]] + sortpos
+			sortpos	= sorted(sortpos)
+			for i in range(0, len(sortpos)):
+				if sortpos[i] in translator[key]:
+					start	= translator[key][sortpos[i]]
+					tstart	= sortpos[i]
 				else:
-					dpos[key]	= dpos[key] + [newpos]
+					newpos	= int(start) + (int(sortpos[i]) - int(tstart))
+					if key not in dpos:
+						dpos[key]	= [newpos]
+					else:
+						dpos[key]	= dpos[key] + [newpos]
 	else:
-		dstart		= allpos[key][0]
-		dend		= allpos[key][1]
-		del		allpos[key][0]
-		del 		allpos[key][0]
-		sortpos		= sorted(allpos[key])
-		dend		= sortpos[-1] - dend + 1
-		dstart		= sortpos[-1] - dstart + 1
-		allpos[key]	= allpos[key] + [dstart, dend]
-		sortpos		= sorted(allpos[key])
-		for i in range(0, len(sortpos)):
-			if sortpos[i] in translator[key]:
-				start	= translator[key][sortpos[i]]
-				tstart	= sortpos[i]
-			else:
-				newpos	= (int(sortpos[i]) - int(tstart)) + int(start)
-				if key not in dpos:
-					dpos[key]	= [newpos]
+		for ikey in allpos[key].iterkeys():
+			sortpos	= list()
+			for iikey in allpos[key][ikey][2].iterkeys():
+				sortpos	= sortpos +[iikey]
+			sortpos	= [allpos[key][ikey][0], allpos[key][ikey][1]] + sortpos
+			dstart		= sortpos[0]
+			dend		= sortpos[1]
+			del		sortpos[0]
+			del 		sortpos[0]
+			sortpos		= sorted(sortpos)
+			dend		= sortpos[-1] - dend + 1
+			dstart		= sortpos[-1] - dstart + 1
+			sortpos		= sortpos + [dstart, dend]
+			sortpos		= sorted(sortpos)
+			for i in range(0, len(sortpos)):
+				if sortpos[i] in translator[key]:
+					start	= translator[key][sortpos[i]]
+					tstart	= sortpos[i]
 				else:
-					dpos[key]	= dpos[key] + [newpos]
+					newpos	= int(start) + (int(sortpos[i]) - int(tstart))
+					if key not in dpos:
+						dpos[key]	= [newpos]
+					else:
+						dpos[key]	= dpos[key] + [newpos]
 
 with open(options.outfile, "w") as f:
 	for key in dpos.iterkeys():
@@ -158,9 +170,9 @@ with open(options.outfile, "w") as f:
 		idsort	= zip(starts[key], identifiers[key])
 		domsort.sort()
 		idsort.sort()
+		n=0
 		for i in xrange(0, len(dpos[key]) - 1, 2):
-			output	= [str(key), str(gcoords[key][0]), str(gcoords[key][1]), str(dpos[key][i]), str(dpos[key][i+1]), str(domsort[0][1]), str(idsort[0][1])]
+			output	= [str(key), str(gcoords[key][0]), str(gcoords[key][1]), str(dpos[key][i]), str(dpos[key][i+1]), str(domsort[n][1]), str(idsort[n][1])]
 			output	= "\t".join(output)
 			f.write(output + "\n")
-			del domsort[0]
-			del idsort[0]
+			n += 1
